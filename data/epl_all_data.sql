@@ -1,0 +1,1 @@
+select * from energy.combined_buildings_energy_labels;
