@@ -1,24 +1,3 @@
 #!/usr/bin/env bash
-csvsql --db postgresql://postgres@localhost:5432/geodata \
-  --create-if-not-exists \
-  --db-schema energy \
-  --tables building_energy_performance \
-  --insert woningen_07.2017-1.csv
-
-csvsql --db postgresql://postgres@localhost:5432/geodata \
-  --create-if-not-exists \
-  --db-schema energy \
-  --tables building_energy_performance \
-  --insert woningen_07.2017-2.csv
-
-csvsql --db postgresql://postgres@localhost:5432/geodata \
-  --create-if-not-exists \
-  --db-schema energy \
-  --tables building_energy_performance \
-  --insert woningen_07.2017-3.csv
-
-csvsql --db postgresql://postgres@localhost:5432/geodata \
-  --create-if-not-exists \
-  --db-schema energy \
-  --tables building_energy_performance \
-  --insert woningen_07.2017-4.csv
+psql --host localhost --username postgres --dbname geodata --file create_building_energy_performance_table.sql
+psql --host localhost --username postgres --dbname geodata --file insert_building_energy_data.sql
