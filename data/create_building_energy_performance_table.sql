@@ -1,3 +1,6 @@
+CREATE SCHEMA energy
+  AUTHORIZATION postgres;
+
 CREATE TABLE energy.building_energy_performance (
 	"POSTCODE_WONING" VARCHAR NOT NULL,
 	"HUISNUMMER_WONING" DECIMAL NOT NULL,
