@@ -1,10 +1,12 @@
+-- View: energy.combined_buildings_energy_labels
+
 DROP VIEW energy.combined_buildings_energy_labels;
 
 CREATE OR REPLACE VIEW energy.combined_buildings_energy_labels AS
  SELECT bep."POSTCODE_WONING" AS postal_code,
     naab.huisnummer AS house_number,
     bep."HUISNUMMER_TOEV_WONING" AS house_number_addition,
-    vbogdab.gebruiksdoelen AS purposes,
+    array_to_json(vbogdab.gebruiksdoelen) AS purposes,
     pandab.bouwjaar AS year_of_construction,
     replace(bep."EP_TXT"::text, ','::text, '.'::text)::numeric AS energy_performance_index,
     bep."LABEL" AS energy_performance_label,
@@ -19,7 +21,6 @@ CREATE OR REPLACE VIEW energy.combined_buildings_energy_labels AS
      JOIN energy.verblijfsobjectgebruiksdoelen vbogdab ON adres.adresseerbaarobject::text = vbogdab.identificatie::text
      JOIN bagactueel.pandactueelbestaand pandab ON vbopab.gerelateerdpand::text = pandab.identificatie::text
   WHERE bep."LABEL" IS NOT NULL;
---  GROUP BY bep."POSTCODE_WONING", naab.huisnummer, bep."HUISNUMMER_TOEV_WONING", pandab.bouwjaar, (replace(bep."EP_TXT"::text, ','::text, '.'::text)::numeric), bep."LABEL", bep."OPNAMEDATUM", bep."REGISTRATIEDATUM", (st_astext(st_snaptogrid(st_transform(st_force2d(pandab.geovlak), 4326), 0.000001::double precision))), (st_astext(st_snaptogrid(st_centroid(st_transform(st_force2d(pandab.geovlak), 4326)), 0.000001::double precision)));
 
 ALTER TABLE energy.combined_buildings_energy_labels
   OWNER TO postgres;
