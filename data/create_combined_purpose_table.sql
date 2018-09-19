@@ -2,14 +2,15 @@
 
 -- DROP TABLE energy.verblijfsobjectgebruiksdoelen;
 
-CREATE TABLE energy.verblijfsobjectgebruiksdoelen
-(
-  identificatie character varying(16),
-  gebruiksdoelen bagactueel.gebruiksdoelverblijfsobject[]
-)
-WITH (
-  OIDS=FALSE
-);
+CREATE TABLE energy.verblijfsobjectgebruiksdoelen AS
+SELECT
+  vogdab.identificatie,
+  array_agg(vogdab.gebruiksdoelverblijfsobject) AS gebruiksdoelen
+FROM
+  bagactueel.verblijfsobjectgebruiksdoelactueelbestaand vogdab
+GROUP BY
+  vogdab.identificatie;
+
 ALTER TABLE energy.verblijfsobjectgebruiksdoelen
   OWNER TO postgres;
 

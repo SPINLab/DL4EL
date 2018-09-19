@@ -1,7 +1,5 @@
 -- View: energy.combined_buildings_energy_labels
 
-DROP VIEW energy.combined_buildings_energy_labels;
-
 CREATE OR REPLACE VIEW energy.combined_buildings_energy_labels AS
  SELECT bep."POSTCODE_WONING" AS postal_code,
     naab.huisnummer AS house_number,

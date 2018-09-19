@@ -1,11 +1,4 @@
-COPY building_energy_performance("POSTCODE_WONING","HUISNUMMER_WONING","HUISNUMMER_TOEV_WONING","OPNAMEDATUM","EP","LABEL","REGISTRATIEDATUM")
-FROM 'woningen_07.2017-1.csv' DELIMITER ',' CSV HEADER;
-
-COPY building_energy_performance("POSTCODE_WONING","HUISNUMMER_WONING","HUISNUMMER_TOEV_WONING","OPNAMEDATUM","EP","LABEL","REGISTRATIEDATUM")
-FROM 'woningen_07.2017-2.csv' DELIMITER ',' CSV HEADER;
-
-COPY building_energy_performance("POSTCODE_WONING","HUISNUMMER_WONING","HUISNUMMER_TOEV_WONING","OPNAMEDATUM","EP","LABEL","REGISTRATIEDATUM")
-FROM 'woningen_07.2017-3.csv' DELIMITER ',' CSV HEADER;
-
-COPY building_energy_performance("POSTCODE_WONING","HUISNUMMER_WONING","HUISNUMMER_TOEV_WONING","OPNAMEDATUM","EP","LABEL","REGISTRATIEDATUM")
-FROM 'woningen_07.2017-4.csv' DELIMITER ',' CSV HEADER;
+\COPY energy.building_energy_performance FROM '/tmp/energy/woningen_07.2017-1.csv' DELIMITER ',' CSV HEADER;
+\COPY energy.building_energy_performance FROM '/tmp/energy/woningen_07.2017-2.csv' DELIMITER ',' CSV HEADER;
+\COPY energy.building_energy_performance FROM '/tmp/energy/woningen_07.2017-3.csv' DELIMITER ',' CSV HEADER;
+\COPY energy.building_energy_performance FROM '/tmp/energy/woningen_07.2017-4.csv' DELIMITER ',' CSV HEADER;
