@@ -85,8 +85,9 @@ def get_data_from_db(cursor):
             'centroid_crs84': row[cols.index('centroid_wgs84')],
         }
 
-        # just duplicate for house_number
+        # just duplicate for house_number and year of construction
         record['house_number_vec'] = record['house_number']
+        record['year_of_construction_vec'] = record['year_of_construction']
 
         # one-hot encoding for house number addition
         if record['house_number_addition']:
@@ -153,12 +154,12 @@ def main():
     data, labels = get_data_from_db(cursor)
 
     train_data, test_data, train_labels, test_labels = train_test_split(data, labels, test_size=0.2, shuffle=True)
-    val_data, test_data, val_labels, test_labels = train_test_split(test_data, test_labels, test_size=0.5)
-    connection.close()
-
     # clean up and free some memory
+    connection.close()
     del data, labels, cursor, connection
     gc.collect()
+
+    val_data, test_data, val_labels, test_labels = train_test_split(test_data, test_labels, test_size=0.5)
 
     print('Saving unit test data')
     np.savez_compressed(os.path.join(args.output_folder, UNIT_TEST_DATA_FILE),
@@ -176,9 +177,12 @@ def main():
                         labels=val_labels)
 
     print('Saving training data...')
-    np.savez_compressed(os.path.join(args.output_folder, TRAIN_DATA_FILE),
-                        data=train_data,
-                        labels=train_labels)
+
+    parts = 10
+    for part in range(parts):
+        np.savez_compressed(os.path.join(args.output_folder, TRAIN_DATA_FILE + '_part_' + (part + 1)),
+                            data=train_data[part::parts],
+                            labels=train_labels[part::parts])
 
 
 if __name__ == '__main__':
