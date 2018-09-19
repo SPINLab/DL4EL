@@ -180,7 +180,7 @@ def main():
 
     parts = 10
     for part in range(parts):
-        np.savez_compressed(os.path.join(args.output_folder, TRAIN_DATA_FILE + '_part_' + (part + 1)),
+        np.savez_compressed(os.path.join(args.output_folder, TRAIN_DATA_FILE + '_part_' + str(part + 1)),
                             data=train_data[part::parts],
                             labels=train_labels[part::parts])
 
