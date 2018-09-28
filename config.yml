@@ -7,3 +7,4 @@ hp:
     batch_size: 32
     shuffle: true
     num_workers: 6
+    validation_size: 1000
