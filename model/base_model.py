@@ -5,7 +5,6 @@ import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from model.PadCollate import PadCollate
 from model.dataset import EnergyLabelData
 from model.dict_pad_collate import dict_pad_collate
 
