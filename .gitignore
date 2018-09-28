@@ -104,3 +104,6 @@ venv.bak/
 .mypy_cache/
 
 /data/cifar*
+/.idea/
+/data/*.npz
+!/data/building_energy_unit_test_v1.2.npz
