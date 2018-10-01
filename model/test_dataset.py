@@ -110,4 +110,10 @@ class TestDataLoader(unittest.TestCase):
 
     def test_label_shape(self):
         for (data, label) in data_loader:
-            self.assertEqual(label.shape, torch.Size([1, 9]))
+            # One-hot encoding of the label is done at runtime in the epoch loop
+            self.assertEqual(label.shape, torch.Size([1]))
+
+    def test_reuse_normalization(self):
+        this_data = EnergyLabelData('../data/building_energy_unit_test_v1.2.npz')
+        that_data = EnergyLabelData('../data/building_energy_unit_test_v1.2.npz', normalization=this_data.normalization)
+        self.assertDictEqual(this_data.normalization, that_data.normalization)
