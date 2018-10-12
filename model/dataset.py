@@ -109,8 +109,16 @@ class EnergyLabelData(Dataset):
         sample['registration_date_vec'][3] /= self.normalization['reg_weekday_std']
         sample['year_of_construction_vec'] -= self.normalization['construction_years_mean']
         sample['year_of_construction_vec'] /= self.normalization['construction_years_std']
-        sample['house_number_vec'] -= self.normalization['house_number_mean']
-        sample['house_number_vec'] /= self.normalization['house_number_std']
+
+        house_number_vec = [sample['house_number_vec'] - self.normalization['house_number_mean']]
+        house_number_vec[0] /= self.normalization['house_number_std']
+        is_even = sample['house_number_vec'] % 2
+        house_number_vec.append(is_even)
+
+        sample['house_number_vec'] = np.array(house_number_vec)
+        sample['registration_date_vec'] = np.array(sample['registration_date_vec'])
+        sample['recorded_date_vec'] = np.array(sample['recorded_date_vec'])
+        sample['postal_code_vec'] = np.array(sample['postal_code_vec'].flatten())
 
         label = deepcopy(self.labels[index])
         label_one_hot = np.zeros((9,))
