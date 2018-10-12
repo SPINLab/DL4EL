@@ -1,10 +1,31 @@
 hp:
+  log_frequency: 100
   batch_size: 16
-  learning_rate: 1e-4
-  epochs: 200
+  submodules:
+    year_of_construction:
+      output_size: 16
+    registration_date:
+      output_size: 16
+    recorded_date:
+      output_size: 16
+    house_number:
+      output_size: 16
+#    house_number_addition_size: 16
+    purposes:
+      output_size: 16
+    postal_code:
+      output_size: 16
+    geometry_cnn:
+      output_size: 64
+      cnn_kernel_size: 5
+      maxpool_kernel_size: 3
+  late_fusion:
+    hidden_size: 256
+  learning_rate: 1e-3
+  epochs: 20
   output_size: 9
   data_loader:
     batch_size: 32
     shuffle: true
     num_workers: 6
-    validation_size: 1000
+    validation_size: 5000
