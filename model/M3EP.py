@@ -5,7 +5,6 @@ from torch import nn
 
 def batch_to_device(batch, device):
     for key in batch[0].keys():
-        batch[0][key] = torch.tensor(batch[0][key])
         batch[0][key] = batch[0][key].float()
         batch[0][key] = batch[0][key].to(device)
 
@@ -97,22 +96,29 @@ class M3EP(nn.Module):
         convnet_kernel_size = self.config['hp']['submodules'][submodule_name]['cnn_kernel_size']
         maxpool_kernel_size = self.config['hp']['submodules'][submodule_name]['maxpool_kernel_size']
         return nn.Sequential(OrderedDict([
-                    ('geometry_conv1d_1', nn.Conv1d(
-                        in_channels=in_channels,
-                        out_channels=output_size,
-                        kernel_size=convnet_kernel_size,
-                        padding=convnet_kernel_size - 1
-                    )),
-                    ('geometry', nn.ReLU()),
-                    ('geometry_maxpool', nn.MaxPool1d(kernel_size=maxpool_kernel_size)),
-                    ('geometry_conv1d_2', nn.Conv1d(
-                        in_channels=output_size,
-                        out_channels=output_size,
-                        kernel_size=convnet_kernel_size,
-                        padding=convnet_kernel_size - 1
-                    )),
-                    ('geometry_avg_pooling', nn.AvgPool1d(kernel_size=maxpool_kernel_size * 2)),
-                        ])).to(device)
+            ('geometry_conv1d_1', nn.Conv1d(
+                in_channels=in_channels,
+                out_channels=output_size,
+                kernel_size=convnet_kernel_size,
+                padding=convnet_kernel_size - 1
+            )),
+            ('geometry', nn.ReLU()),
+            ('geometry_conv1d_2', nn.Conv1d(
+                in_channels=output_size,
+                out_channels=output_size,
+                kernel_size=convnet_kernel_size,
+                padding=convnet_kernel_size - 1
+            )),
+            ('geometry', nn.ReLU()),
+            ('geometry_maxpool', nn.MaxPool1d(kernel_size=maxpool_kernel_size)),
+            ('geometry_conv1d_3', nn.Conv1d(
+                in_channels=output_size,
+                out_channels=output_size,
+                kernel_size=convnet_kernel_size,
+                padding=convnet_kernel_size - 1
+            )),
+            ('geometry_avg_pooling', nn.AvgPool1d(kernel_size=maxpool_kernel_size * 2)),
+        ])).to(device)
 
     def forward(self, batch):
         submodule_outputs = []
