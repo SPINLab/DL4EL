@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
 
+from model.M3EP import M3EP, batch_to_device
 from model.dataset import EnergyLabelData
 from model.dict_pad_collate import dict_pad_collate
 
@@ -20,59 +21,45 @@ SCRIPT_NAME = os.path.basename(__file__)
 TIMESTAMP = str(datetime.now()).replace(':', '.').replace(' ', '_')
 SCRIPT_START = time()
 
-if torch.cuda.is_available():
-    print('Using cuda:0')
-    device = torch.device("cuda:0")
-else:
-    print('Using CPU implementation')
-    device = torch.device("cpu")
-
-with open('../config.yml') as f:
-    config = yaml.load(f)
-
-# Tensorboard log writer
-log_dir = os.path.join('runs', TIMESTAMP)
-print('Writing tensorboard logs to', log_dir)
-writer = SummaryWriter(log_dir)
-
-
-def val_acc(model, val_data, size):
-    validation_indices = list(range(len(val_data)))
-    val_sample_indices = np.random.choice(
-        validation_indices, size=size)
-    val_sample_data = [val_data[idx] for idx in val_sample_indices]
-    sample_tensor = torch.Tensor([sample[0]['year_of_construction_vec'] for sample in val_sample_data])
-    sample_tensor = sample_tensor.float()
-    sample_tensor = sample_tensor.unsqueeze(dim=1)
-    sample_tensor = sample_tensor.to(device)
-    val_pred = model(sample_tensor)
+def val_acc(model, val_loader, device):
+    val_batch = next(iter(val_loader))
+    val_batch = batch_to_device(val_batch, device)
+    val_pred = model(val_batch)
     y_pred = val_pred.cpu().detach().numpy()
     y_pred = [np.argmax(p) for p in y_pred]
-    val_sample_labels = [sample[1] for sample in val_sample_data]
-    score = accuracy_score(val_sample_labels, y_pred)
+    score = accuracy_score(val_batch[1], y_pred)
     return score
 
 
 if __name__ == '__main__':
+    with open('../config.yml') as f:
+        config = yaml.load(f)
+
+    # Tensorboard log writer
+    log_dir = os.path.join('runs', TIMESTAMP)
+    print('Writing tensorboard logs every', config['hp']['log_frequency'], 'steps to', log_dir)
+    writer = SummaryWriter(log_dir)
+
+    model = M3EP(config)
+
+    if torch.cuda.is_available():
+        print('Using CUDA implementation')
+        device = torch.device('cuda')
+        model.cuda()
+    else:
+        print('Using CPU implementation')
+        device = torch.device('cpu')
+
     train_data = EnergyLabelData('../data/building_energy_train_v1.2_part_1.npz')
-    # train_data = EnergyLabelData('../data/building_energy_unit_test_v1.2.npz')
     train_loader = DataLoader(train_data,
                               batch_size=config['hp']['data_loader']['batch_size'],
                               num_workers=config['hp']['data_loader']['num_workers'],
                               collate_fn=dict_pad_collate)
     val_data = EnergyLabelData('../data/building_energy_val_v1.2.npz', normalization=train_data.normalization)
-
-    hidden_size = 100
-    # output_shape = train_loader[0][1].shape
-    output_shape = 9
-    ref_sample_input = train_data[0][0]
-    input_shape = np.shape(ref_sample_input['year_of_construction_vec'])
-
-    model = nn.Sequential(
-        nn.Linear(1, hidden_size),
-        nn.ReLU(),
-        nn.Linear(hidden_size, output_shape))
-    model.cuda()
+    val_loader = DataLoader(val_data,
+                            batch_size=config['hp']['data_loader']['validation_size'],
+                            num_workers=config['hp']['data_loader']['num_workers'],
+                            collate_fn=dict_pad_collate)
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
@@ -85,15 +72,11 @@ if __name__ == '__main__':
 
         with tqdm(total=len(train_loader)) as progress_bar:
             for step, batch in enumerate(train_loader):
-                inputs = batch[0]['year_of_construction_vec']
-                inputs = inputs.unsqueeze(dim=1)
-                inputs = inputs.float()
-                inputs = inputs.to(device)
+                batch = batch_to_device(batch, device)
+                labels = batch[1]
 
-                labels = batch[1].to(device)
-
-                pred = model(inputs)
-                loss = loss_fn(pred, labels)
+                prediction = model(batch)
+                loss = loss_fn(prediction, labels)
                 loss_msg['loss'] = loss.item()
                 progress_bar.postfix = loss_msg
                 progress_bar.update()
@@ -101,18 +84,20 @@ if __name__ == '__main__':
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                writer.add_scalar('train_loss', loss.item(), global_step=(epoch * len(train_loader) + step))
+                if step % config['hp']['log_frequency'] == 0:
+                    writer.add_scalar('train_loss', loss.item(), global_step=(epoch * len(train_loader) + step))
 
-        print('Validation accuracy:', val_acc(model, val_data, size=config['hp']['data_loader']['validation_size']))
-        writer.add_scalar('val_acc', loss.item(), global_step=epoch)
+        acc = val_acc(model, val_loader, device)
+        print('Validation accuracy:', acc.item())
+        writer.add_scalar('val_acc', acc.item(), global_step=epoch)
 
-    accuracy = val_acc(model, val_data, size=50000)
+    accuracy = val_acc(model, val_loader, device)
     runtime = time() - SCRIPT_START
     message = 'on {} completed with accuracy of \n{:f} \nin {} in {} epochs\n'.format(
         socket.gethostname(), accuracy, timedelta(seconds=runtime), config['hp']['epochs'])
 
-    for key, value in sorted(config['hp']):
-        message += '{}: {}\t'.format(key, value)
+    # for key, value in sorted(config['hp']):
+    #     message += '{}: {}\t'.format(key, value)
 
     # notify(SIGNATURE, message)
     print(SCRIPT_NAME, 'finished successfully with', message)
