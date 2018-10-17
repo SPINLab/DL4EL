@@ -1,4 +1,5 @@
-log_frequency: 100
+log_frequency: 1000
+vocab_len: 36  # for purposes of one-hot encoding strings: the len([a-z]) + len([0-9])
 batch_size: 16
 submodules:
   year_of_construction:
@@ -9,14 +10,15 @@ submodules:
     output_size: 16
   house_number:
     output_size: 16
-#    house_number_addition:
-#      output_size: 16
+  house_number_addition:
+    output_size: 16
   purposes:
     output_size: 16
   postal_code:
     output_size: 16
   geometry:
     input_dim: 2
+    hidden_size: 64
     output_dim: 2
     output_size: 16
     cnn_kernel_size: 5
@@ -30,4 +32,4 @@ data_loader:
   batch_size: 32
   shuffle: true
   num_workers: 6
-  validation_size: 5000
+  validation_size: 2000
