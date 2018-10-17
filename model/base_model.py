@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     # Tensorboard log writer
     log_dir = os.path.join('runs', TIMESTAMP)
-    print('Writing tensorboard logs every', config['hp']['log_frequency'], 'steps to', log_dir)
+    print('Writing tensorboard logs every', config['log_frequency'], 'steps to', log_dir)
     writer = SummaryWriter(log_dir)
 
     model = M3EP(config)
@@ -52,22 +52,22 @@ if __name__ == '__main__':
 
     train_data = EnergyLabelData('../data/building_energy_train_v1.2_part_1.npz')
     train_loader = DataLoader(train_data,
-                              batch_size=config['hp']['data_loader']['batch_size'],
-                              num_workers=config['hp']['data_loader']['num_workers'],
+                              batch_size=config['data_loader']['batch_size'],
+                              num_workers=config['data_loader']['num_workers'],
                               collate_fn=dict_pad_collate)
     val_data = EnergyLabelData('../data/building_energy_val_v1.2.npz', normalization=train_data.normalization)
     val_loader = DataLoader(val_data,
-                            batch_size=config['hp']['data_loader']['validation_size'],
-                            num_workers=config['hp']['data_loader']['num_workers'],
+                            batch_size=config['data_loader']['validation_size'],
+                            num_workers=config['data_loader']['num_workers'],
                             collate_fn=dict_pad_collate)
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
         params=model.parameters(),
-        lr=float(config['hp']['learning_rate']))
+        lr=float(config['learning_rate']))
 
-    for epoch in range(config['hp']['epochs']):
-        print('Epoch {} of {}:'.format(str(epoch + 1), config['hp']['epochs']))
+    for epoch in range(config['epochs']):
+        print('Epoch {} of {}:'.format(str(epoch + 1), config['epochs']))
         loss_msg = {}
 
         with tqdm(total=len(train_loader)) as progress_bar:
@@ -84,7 +84,7 @@ if __name__ == '__main__':
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                if step % config['hp']['log_frequency'] == 0:
+                if step % config['log_frequency'] == 0:
                     writer.add_scalar('train_loss', loss.item(), global_step=(epoch * len(train_loader) + step))
 
         acc = val_acc(model, val_loader, device)
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     accuracy = val_acc(model, val_loader, device)
     runtime = time() - SCRIPT_START
     message = 'on {} completed with accuracy of \n{:f} \nin {} in {} epochs\n'.format(
-        socket.gethostname(), accuracy, timedelta(seconds=runtime), config['hp']['epochs'])
+        socket.gethostname(), accuracy, timedelta(seconds=runtime), config['epochs'])
 
     # for key, value in sorted(config['hp']):
     #     message += '{}: {}\t'.format(key, value)
