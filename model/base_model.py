@@ -50,12 +50,12 @@ if __name__ == '__main__':
         print('Using CPU implementation')
         device = torch.device('cpu')
 
-    train_data = EnergyLabelData('../data/building_energy_train_v1.2_part_1.npz')
+    train_data = EnergyLabelData('../data/building_energy_train_v1.2_part_1.npz', config)
     train_loader = DataLoader(train_data,
                               batch_size=config['data_loader']['batch_size'],
                               num_workers=config['data_loader']['num_workers'],
                               collate_fn=dict_pad_collate)
-    val_data = EnergyLabelData('../data/building_energy_val_v1.2.npz', normalization=train_data.normalization)
+    val_data = EnergyLabelData('../data/building_energy_val_v1.2.npz', config, normalization=train_data.normalization)
     val_loader = DataLoader(val_data,
                             batch_size=config['data_loader']['validation_size'],
                             num_workers=config['data_loader']['num_workers'],
@@ -69,6 +69,7 @@ if __name__ == '__main__':
     for epoch in range(config['epochs']):
         print('Epoch {} of {}:'.format(str(epoch + 1), config['epochs']))
         loss_msg = {}
+        loss_values = []
 
         with tqdm(total=len(train_loader)) as progress_bar:
             for step, batch in enumerate(train_loader):
@@ -84,8 +85,11 @@ if __name__ == '__main__':
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                if step % config['log_frequency'] == 0:
-                    writer.add_scalar('train_loss', loss.item(), global_step=(epoch * len(train_loader) + step))
+                if step % config['log_frequency'] == 0 and len(loss_values) > 0:
+                    writer.add_scalar('train_loss', np.mean(loss_values), global_step=(epoch * len(train_loader) + step))
+                    loss_values = []  # reset
+                else:
+                    loss_values.append(loss.item())
 
         acc = val_acc(model, val_loader, device)
         print('Validation accuracy:', acc.item())
