@@ -52,15 +52,15 @@ class M3EP(nn.Module):
                     ('house_number_linear1', nn.Linear(2, output_size)),
                     ('house_number_relu', nn.ReLU())])))
 
-        # # House number addition submodule
-        # submodule_name = 'house_number_addition'
-        # output_size = config['hp']['submodules'][submodule_name + '_size']
-        # setattr(self, submodule_name,
-        #         nn.Sequential(OrderedDict([
-        #             ('house_number_addition_linear1', nn.Linear(36, output_size)),
-        #             ('house_number_addition_relu', nn.ReLU()),
-        #             ('house_number_addition_global_average', nn.AvgPool2d(output_size))
-        #         ])))
+        # House number addition submodule
+        submodule_name = 'house_number_addition'
+        output_size = config['submodules'][submodule_name]['output_size']
+        setattr(self, submodule_name,
+                nn.Sequential(OrderedDict([
+                    ('house_number_addition_linear1', nn.Linear(self.config['vocab_len'], output_size)),
+                    ('house_number_addition_relu', nn.ReLU()),
+                    ('house_number_addition_global_average', nn.AdaptiveAvgPool1d(1))
+                ])))
 
         # Purposes submodule
         submodule_name = 'purposes'
@@ -76,7 +76,7 @@ class M3EP(nn.Module):
         output_size = config['submodules'][submodule_name]['output_size']
         setattr(self, submodule_name,
                 nn.Sequential(OrderedDict([
-                    ('postal_code_linear1', nn.Linear(6 * 36, output_size)),
+                    ('postal_code_linear1', nn.Linear(6 * self.config['vocab_len'], output_size)),
                     ('postal_code_relu', nn.ReLU())
                 ])))
 
@@ -85,29 +85,31 @@ class M3EP(nn.Module):
         output_size = self.config['submodules'][submodule_name]['output_size']
         convnet_kernel_size = self.config['submodules'][submodule_name]['cnn_kernel_size']
         maxpool_kernel_size = self.config['submodules'][submodule_name]['maxpool_kernel_size']
+        hidden_size = self.config['submodules'][submodule_name]['hidden_size']
         setattr(self, submodule_name,
                 nn.Sequential(OrderedDict([
                     ('geometry_conv1d_1', nn.Conv1d(
                         in_channels=5,
-                        out_channels=output_size,
+                        out_channels=hidden_size,
                         kernel_size=convnet_kernel_size,
                         padding=convnet_kernel_size - 1
                     )),
-                    ('geometry', nn.ReLU(inplace=True)),
+                    ('geometry', nn.ReLU()),
                     # ('geometry_conv1d_2', nn.Conv1d(
                     #     in_channels=output_size,
                     #     out_channels=output_size,
                     #     kernel_size=convnet_kernel_size,
                     #     padding=convnet_kernel_size - 1
                     # )),
-                    # ('geometry', nn.ReLU(inplace=True)),
+                    # ('geometry', nn.ReLU()),
                     ('geometry_maxpool', nn.MaxPool1d(kernel_size=maxpool_kernel_size)),
                     ('geometry_conv1d_3', nn.Conv1d(
-                        in_channels=output_size,
+                        in_channels=hidden_size,
                         out_channels=output_size,
                         kernel_size=convnet_kernel_size,
                         padding=convnet_kernel_size - 1
                     )),
+                    ('geometry', nn.ReLU()),
                     ('geometry_avg_pooling', nn.AdaptiveAvgPool1d(1)),
                 ])))
 
