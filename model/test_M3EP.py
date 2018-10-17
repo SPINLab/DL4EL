@@ -13,7 +13,7 @@ from model.dict_pad_collate import dict_pad_collate
 with open('../config.yml') as f:
     config = yaml.load(f)
 
-dataset = EnergyLabelData('../data/building_energy_unit_test_v1.2.npz')
+dataset = EnergyLabelData('../data/building_energy_unit_test_v1.2.npz', config)
 data_loader = DataLoader(dataset)
 
 
