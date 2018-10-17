@@ -1,13 +1,13 @@
 from copy import deepcopy
 
-from torch.utils.data import Dataset
-import numpy as np
 import deep_geometry.geom_scaler as gs
+import numpy as np
+from torch.utils.data import Dataset
 from tqdm import tqdm
 
 
 class EnergyLabelData(Dataset):
-    def __init__(self, numpy_zip_path, normalization=None):
+    def __init__(self, numpy_zip_path, config, normalization=None):
         """
         Loads data from numpy_zip_path, applies a quick integrity check and sets normalization settings
         :param numpy_zip_path: path as string to a Energy Data numpy zip file
@@ -20,6 +20,7 @@ class EnergyLabelData(Dataset):
         """
         npz = np.load(numpy_zip_path)
         self.data = []
+        self.config = config
         self.labels = [label['energy_performance_vec'] for label in npz['labels']]
 
         print('Loading data from', numpy_zip_path)
@@ -114,6 +115,11 @@ class EnergyLabelData(Dataset):
         house_number_vec[0] /= self.normalization['house_number_std']
         is_even = sample['house_number_vec'] % 2
         house_number_vec.append(is_even)
+
+        padding = self.config['submodules']['house_number_addition']['output_size'] - \
+                  sample['house_number_addition_vec'].shape[0]
+        padded = np.concatenate([sample['house_number_addition_vec'], np.zeros((padding, self.config['vocab_len']))], axis=0)
+        sample['house_number_addition_vec'] = padded
 
         sample['house_number_vec'] = np.array(house_number_vec)
         sample['registration_date_vec'] = np.array(sample['registration_date_vec'])
