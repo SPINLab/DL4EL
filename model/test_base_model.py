@@ -21,7 +21,7 @@ class TestBaseModel(unittest.TestCase):
         dataset = EnergyLabelData('../data/building_energy_unit_test_v1.2.npz')
         val_loader = DataLoader(dataset,
                                 batch_size=100,
-                                num_workers=config['hp']['data_loader']['num_workers'],
+                                num_workers=config['data_loader']['num_workers'],
                                 collate_fn=dict_pad_collate)
         va = val_acc(model, val_loader, torch.device('cpu'))
         print('Accuracy:', va)
