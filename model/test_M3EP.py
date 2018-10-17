@@ -22,21 +22,21 @@ class MyTestCase(unittest.TestCase):
 
     def test_variable_length_geometries(self):
         model = M3EP(config)
-
         batch_size = 12
         number_of_points = range(1, 100)
+        channels = 5
+
         for n in number_of_points:
-            batch = torch.rand(batch_size, n, 5)
-            geom_model = model.geometry_submodule(batch.shape[1], torch.device('cpu'))
-            output = geom_model(batch)
-            self.assertEqual(output.shape, torch.Size([12, config['hp']['submodules']['geometry_cnn']['output_size'], 1]))
+            batch = torch.rand(batch_size, channels, n)
+            output = model.geometry(batch)
+            self.assertEqual(output.shape, torch.Size([12, config['submodules']['geometry']['output_size'], 1]))
 
     def test_model_cpu(self):
         model = M3EP(config)
         for step, batch in enumerate(data_loader):
             batch = batch_to_device(batch, torch.device('cpu'))
             pred = model(batch)
-            output_size = config['hp']['output_size']
+            output_size = config['output_size']
             self.assertEqual(pred.shape, torch.Size([1, output_size]))
             self.assertEqual(pred.device, torch.device('cpu'))
 
