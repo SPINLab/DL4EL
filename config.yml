@@ -1,33 +1,36 @@
 log_frequency: 1000
 vocab_len: 36  # for purposes of one-hot encoding strings: the len([a-z]) + len([0-9])
 batch_size: 16
+
 submodules:
-  year_of_construction:
-    output_size: 16
-  registration_date:
-    output_size: 16
-  recorded_date:
-    output_size: 16
-  house_number:
-    output_size: 16
-  house_number_addition:
-    output_size: 16
-  purposes:
-    output_size: 16
-  postal_code:
-    output_size: 16
+#  random_noise:
+#    input_size: 1
+#    output_size: 16
+#  year_of_construction:
+#    output_size: 16
+#  registration_date:
+#    output_size: 16
+#  recorded_date:
+#    output_size: 16
+#  house_number:
+#    output_size: 16
+#  house_number_addition:
+#    output_size: 16
+#  purposes:
+#    output_size: 16
+#  postal_code:
+#    output_size: 16
   geometry:
-    input_dim: 2
     hidden_size: 64
-    output_dim: 2
-    output_size: 16
+    output_size: 32  # output 'channels'
     cnn_kernel_size: 5
     maxpool_kernel_size: 3
 late_fusion:
+  input_size: 16 # specify last dimension output size for all submodules to be able to concatenate
   hidden_size: 256
+  output_size: 9
 learning_rate: 1e-3
 epochs: 20
-output_size: 9
 data_loader:
   batch_size: 32
   shuffle: true
