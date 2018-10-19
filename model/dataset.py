@@ -116,10 +116,16 @@ class EnergyLabelData(Dataset):
         is_even = sample['house_number_vec'] % 2
         house_number_vec.append(is_even)
 
-        padding = self.config['submodules']['house_number_addition']['output_size'] - \
-                  sample['house_number_addition_vec'].shape[0]
-        padded = np.concatenate([sample['house_number_addition_vec'], np.zeros((padding, self.config['vocab_len']))], axis=0)
-        sample['house_number_addition_vec'] = padded
+        if 'random_noise' in self.config['submodules']:
+            input_size = self.config['submodules']['random_noise']['input_size']
+            sample['random_noise_vec'] = np.random.random((input_size, 1))
+
+        if 'house_number_addition' in self.config['submodules']:
+            padding = self.config['submodules']['house_number_addition']['output_size'] - \
+                      sample['house_number_addition_vec'].shape[0]
+            padded = np.concatenate([sample['house_number_addition_vec'],
+                                     np.zeros((padding, self.config['vocab_len']))], axis=0)
+            sample['house_number_addition_vec'] = padded
 
         sample['house_number_vec'] = np.array(house_number_vec)
         sample['registration_date_vec'] = np.array(sample['registration_date_vec'])
