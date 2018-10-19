@@ -4,6 +4,7 @@ import unittest
 import yaml
 
 from model.M3EP import M3EP, batch_to_device
+from model.base_model import val_acc
 from model.dataset import EnergyLabelData
 
 from torch.utils.data import DataLoader
@@ -21,23 +22,30 @@ class MyTestCase(unittest.TestCase):
     global dataset, data_loader
 
     def test_variable_length_geometries(self):
-        model = M3EP(config)
-        batch_size = 12
-        number_of_points = range(1, 100)
-        channels = 5
+        submodule_name = 'geometry'
 
-        for n in number_of_points:
-            batch = torch.rand(batch_size, channels, n)
-            output = model.geometry(batch)
-            self.assertEqual(output.shape, torch.Size([12, config['submodules']['geometry']['output_size'], 1]))
+        if submodule_name in config['submodules']:
+            model = M3EP(config)
+            batch_size = 12
+            number_of_points = range(1, 100)
+            channels = 5
+
+            for n in number_of_points:
+                batch = torch.rand(batch_size, channels, n)
+                output = model.geometry(batch)
+                fusion_input_size = config['late_fusion']['input_size']
+                size = torch.Size([12, config['submodules']['geometry']['output_size'], fusion_input_size])
+                self.assertEqual(output.shape, size)
+        else:
+            pass
 
     def test_model_cpu(self):
         model = M3EP(config)
         for step, batch in enumerate(data_loader):
             batch = batch_to_device(batch, torch.device('cpu'))
             pred = model(batch)
-            output_size = config['output_size']
-            self.assertEqual(pred.shape, torch.Size([1, output_size]))
+            output_size = config['late_fusion']['output_size']
+            self.assertEqual(pred.shape[1], output_size)
             self.assertEqual(pred.device, torch.device('cpu'))
 
     def test_correct_device(self):
@@ -75,6 +83,27 @@ class MyTestCase(unittest.TestCase):
             batch = batch_to_device(batch, device)
             pred = model(batch)
             self.assertEqual(pred.device.type, device.type)
+
+    def test_val_acc(self):
+        model = M3EP(config)
+
+        val_loader = DataLoader(dataset,
+                                batch_size=100,
+                                num_workers=config['data_loader']['num_workers'],
+                                collate_fn=dict_pad_collate)
+        va = val_acc(model, val_loader, torch.device('cpu'))
+        print('Accuracy:', va)
+        self.assertEqual(type(va).__name__, 'float64')
+
+    def test_loss(self):
+        loss_fn = torch.nn.CrossEntropyLoss()
+
+        for step, batch in enumerate(data_loader):
+            model = M3EP(config)
+            pred = model(batch_to_device(batch, torch.device('cpu')))
+            targets = batch[1]
+            loss = loss_fn(pred, targets)
+            self.assertEqual(type(loss).__name__, 'Tensor')
 
 
 if __name__ == '__main__':
