@@ -21,6 +21,7 @@ SCRIPT_NAME = os.path.basename(__file__)
 TIMESTAMP = str(datetime.now()).replace(':', '.').replace(' ', '_')
 SCRIPT_START = time()
 
+
 def val_acc(model, val_loader, device):
     val_batch = next(iter(val_loader))
     val_batch = batch_to_device(val_batch, device)
@@ -59,7 +60,8 @@ if __name__ == '__main__':
     val_loader = DataLoader(val_data,
                             batch_size=config['data_loader']['validation_size'],
                             num_workers=config['data_loader']['num_workers'],
-                            collate_fn=dict_pad_collate)
+                            collate_fn=dict_pad_collate,
+                            shuffle=True)
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(
@@ -78,6 +80,7 @@ if __name__ == '__main__':
 
                 prediction = model(batch)
                 loss = loss_fn(prediction, labels)
+                # noinspection PyUnresolvedReferences
                 loss_msg['loss'] = loss.item()
                 progress_bar.postfix = loss_msg
                 progress_bar.update()
@@ -86,13 +89,16 @@ if __name__ == '__main__':
                 loss.backward()
                 optimizer.step()
                 if step % config['log_frequency'] == 0 and len(loss_values) > 0:
-                    writer.add_scalar('train_loss', np.mean(loss_values), global_step=(epoch * len(train_loader) + step))
+                    writer.add_scalar(
+                        'train_loss', np.mean(loss_values), global_step=(epoch * len(train_loader) + step))
                     loss_values = []  # reset
                 else:
                     loss_values.append(loss.item())
 
         acc = val_acc(model, val_loader, device)
+        # noinspection PyUnresolvedReferences
         print('Validation accuracy:', acc.item())
+        # noinspection PyUnresolvedReferences
         writer.add_scalar('val_acc', acc.item(), global_step=epoch)
 
     accuracy = val_acc(model, val_loader, device)
