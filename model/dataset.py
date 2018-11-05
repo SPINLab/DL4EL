@@ -90,8 +90,11 @@ class EnergyLabelData(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        sample = deepcopy(self.data[index])
+        sample = deepcopy(self.data[index])  # Make sure we don't touch the original and stack transformations
+        label = deepcopy(self.labels[index])
+
         sample['geometry_vec'][:, :2] /= self.normalization['geom_scale']
+        # sample['geometry_vec'] = np.transpose(sample['geometry_vec'], (1, 0))
         sample['recorded_date_vec'][0] -= self.normalization['rec_year_mean']
         sample['recorded_date_vec'][0] /= self.normalization['rec_year_std']
         sample['recorded_date_vec'][1] -= self.normalization['rec_month_mean']
@@ -116,6 +119,9 @@ class EnergyLabelData(Dataset):
         is_even = sample['house_number_vec'] % 2
         house_number_vec.append(is_even)
 
+        # fake_geom_len = np.random.randint(4, 150)
+        # sample['geometry_vec'] = np.random.randn(fake_geom_len, 5) * 0.01 + label
+
         if 'random_noise' in self.config['submodules']:
             input_size = self.config['submodules']['random_noise']['input_size']
             sample['random_noise_vec'] = np.random.random((input_size, 1))
@@ -132,7 +138,6 @@ class EnergyLabelData(Dataset):
         sample['recorded_date_vec'] = np.array(sample['recorded_date_vec'])
         sample['postal_code_vec'] = np.array(sample['postal_code_vec'].flatten())
 
-        label = deepcopy(self.labels[index])
         label_one_hot = np.zeros((9,))
         label_one_hot[label] = 1
 
