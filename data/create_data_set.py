@@ -7,13 +7,14 @@ from time import time
 
 import psycopg2
 import numpy as np
+from psycopg2.extras import DictCursor
 from sklearn.model_selection import train_test_split
 # from matplotlib import pyplot as plt
 
 from deep_geometry.vectorizer import vectorize_wkt
 from tqdm import tqdm
 
-SCRIPT_VERSION = '1.2'
+SCRIPT_VERSION = '2.0'
 SCRIPT_NAME = os.path.basename(__file__)
 TIMESTAMP = str(datetime.now()).replace(':', '.')
 TRAIN_DATA_FILE = 'building_energy_train_v{}'.format(SCRIPT_VERSION)
@@ -71,19 +72,9 @@ def get_data_from_db(cursor):
     training_data, labels = [], []
     cols = [desc[0] for desc in cursor.description]
 
-    for row in tqdm(cursor, total=cursor.rowcount):
-        purposes = [purpose_to_english[p] for p in row[cols.index('purposes')]]
-        record = {
-            'postal_code': row[cols.index('postal_code')],
-            'house_number': int(row[cols.index('house_number')]),
-            'house_number_addition': row[cols.index('house_number_addition')],
-            'purposes': purposes,
-            'year_of_construction': int(row[cols.index('year_of_construction')]),
-            'recorded_date': row[cols.index('recorded_date')],
-            'registration_date': row[cols.index('registration_date')],
-            'geometry_crs84': row[cols.index('geometry_wgs84')],
-            'centroid_crs84': row[cols.index('centroid_wgs84')],
-        }
+    for record in tqdm(cursor, total=cursor.rowcount):
+        record = dict(record)
+        record['purposes'] = [purpose_to_english[p] for p in record['purposes']]
 
         # just duplicate for house_number and year of construction
         record['house_number_vec'] = record['house_number']
@@ -104,30 +95,33 @@ def get_data_from_db(cursor):
             purposes[PURPOSES.index(purpose)] = 1.
         record['purposes_vec'] = purposes
 
-        pc = np.zeros(shape=(len(record['postal_code']), len(VOCABULARY)))
+        # character-level vectorization of postal code
+        pc = np.zeros((len(record['postal_code']), len(VOCABULARY)))
         for idx, char in enumerate(record['postal_code']):
             pc[idx, VOCABULARY.index(char.lower())] = 1.
         record['postal_code_vec'] = pc
 
+        # building geometry vectorization
         geom = record['geometry_crs84']
         geom = vectorize_wkt(geom)
-        # center
-        centroid = np.mean(geom[:, :2], axis=0)
-        geom[:, :2] = geom[:, :2] - centroid
         record['geometry_vec'] = geom
-        record['centroid_vec'] = vectorize_wkt(record['centroid_crs84'])[0]
+        record['centroid_vec'] = vectorize_wkt(record['centroid_crs84'])[0, :2]
+
+        # vectorization of neighbouring buildings
+        neighbours = record['neighbouring_buildings_crs84']
+        neighbours = vectorize_wkt(neighbours)
+        record['neighbouring_buildings_vec'] = neighbours
 
         rd = record['recorded_date']
         record['recorded_date_vec'] = [rd.year, rd.month, rd.day, rd.weekday()]
-
         rgd = record['registration_date']
         record['registration_date_vec'] = [rgd.year, rgd.month, rgd.day, rgd.weekday()]
 
         training_data.append(record)
         labels.append({
-            'energy_performance_index': row[cols.index('energy_performance_index')],
-            'energy_performance_label': row[cols.index('energy_performance_label')],
-            'energy_performance_vec': ENERGY_CLASSES.index(row[cols.index('energy_performance_label')])
+            'energy_performance_index': record['energy_performance_index'],
+            'energy_performance_label': record['energy_performance_label'],
+            'energy_performance_vec': ENERGY_CLASSES.index(record['energy_performance_label'])
         })
 
     return training_data, labels
@@ -144,7 +138,7 @@ def main():
         sys.exit(1)
 
     connection.set_client_encoding('utf-8')
-    cursor = connection.cursor()
+    cursor = connection.cursor(cursor_factory=DictCursor)
 
     print('Constructing database query result, this will take a few minutes...')
     data_query = open('epl_all_data.sql', mode='r', encoding='utf-8').read()
