@@ -10,12 +10,12 @@ SELECT bep."POSTCODE_WONING" AS postal_code,
   bep."LABEL" AS energy_performance_label,
   bep."OPNAMEDATUM" AS recorded_date,
   bep."REGISTRATIEDATUM" AS registration_date,
-  st_astext(st_snaptogrid(st_transform(st_force2d(pandab.geovlak), 4326), 0.000001)) AS geometry_wgs84,
-  st_astext(st_snaptogrid(st_centroid(st_transform(st_force2d(pandab.geovlak), 4326)), 0.000001)) AS centroid_wgs84,
+  st_astext(st_snaptogrid(st_transform(st_force2d(pandab.geovlak), 4326), 0.000001)) AS geometry_crs84,
+  st_astext(st_snaptogrid(st_centroid(st_transform(st_force2d(pandab.geovlak), 4326)), 0.000001)) AS centroid_crs84,
   st_astext(st_snaptogrid(st_transform(st_force2d(st_collect(array(
     SELECT pab2.geovlak FROM bagactueel.pandactueelbestaand pab2
     WHERE st_dwithin(pandab.geovlak, pab2.geovlak, 50)
-  ))), 4326), 0.000001)) AS g2
+  ))), 4326), 0.000001)) AS neighbouring_buildings_crs84
   FROM energy.building_energy_performance bep
     JOIN bagactueel.nummeraanduidingactueelbestaand naab ON
       bep."POSTCODE_WONING" = naab.postcode
